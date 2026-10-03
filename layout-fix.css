@@ -1,0 +1,10 @@
+/* Snap sections keep their content inside the viewport without large boundary gaps. */
+html{scroll-padding-top:78px}
+.section.snap-block,.guide-section.snap-block{height:calc(100vh - 78px);min-height:0;justify-content:flex-start;padding-top:54px;padding-bottom:30px;overflow:hidden}
+.section.snap-block .feature-grid{margin-top:4px}
+.guide-section.snap-block .guide-panel{margin:auto 0}
+.section.snap-block{padding-top:34px;padding-bottom:24px}.section.snap-block .section-head{margin-bottom:18px}.section.snap-block .feature-card{min-height:188px;padding:16px 18px}.section.snap-block .card-icon{height:32px;margin-bottom:10px;font-size:27px}.section.snap-block .card-icon.collision{font-size:36px}.section.snap-block .feature-card h3{font-size:18px;margin:8px 0 6px}.section.snap-block .feature-card p{font-size:11px;line-height:1.45}.section.snap-block .card-arrow{right:16px;bottom:13px;font-size:16px}.guide-section.snap-block{padding-bottom:0}.guide-support-strip{height:72px;margin:0 -12.5%;padding:0 12.5%;background:#101923;color:#fff;display:flex;align-items:center;justify-content:space-between}.guide-support-strip div{display:flex;align-items:baseline;gap:14px}.guide-support-strip span{font:10px 'DM Mono';color:#7f91a3;text-transform:uppercase}.guide-support-strip b{font-size:15px}.guide-support-strip a{color:#fff;text-decoration:none;font-size:12px;font-weight:700}.guide-support-strip a span{color:#72b5ff;margin-left:10px}
+@media(max-width:800px){.section.snap-block,.guide-section.snap-block{height:auto;min-height:calc(100vh - 78px);overflow:visible;padding-top:55px;padding-bottom:55px}.section.snap-block .feature-grid{margin-top:20px}}
+
+/* Landing on GitHub Pages: the cabinet button has no avatar, so its label stays visible on phones. */
+@media(max-width:800px){.profile-button .profile-label{display:inline}}
