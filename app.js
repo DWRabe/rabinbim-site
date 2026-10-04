@@ -12,3 +12,22 @@ window.addEventListener('wheel', event => {
   snapBlocks[next].scrollIntoView({behavior:'smooth', block:'start'});
   window.setTimeout(() => { wheelLocked = false; }, 700);
 }, {passive:false});
+
+// «Скачать»: asks Yandex Disk for the direct link of the public file and starts the download at once; if that fails,
+// the link opens the Yandex Disk page as before.
+document.querySelectorAll('[data-yadisk-download]').forEach(link => {
+  link.addEventListener('click', async event => {
+    event.preventDefault();
+    try {
+      const api = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=' + encodeURIComponent(link.href);
+      const response = await fetch(api);
+      if (!response.ok) throw new Error(String(response.status));
+      const { href } = await response.json();
+      if (!href) throw new Error('no href');
+      window.location.href = href;
+    } catch {
+      window.open(link.href, '_blank', 'noopener');
+    }
+  });
+});
+
