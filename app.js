@@ -1,7 +1,4 @@
 (() => {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // «Скачать»: asks Yandex Disk for the direct link and starts the download; falls back to the Disk page.
   document.querySelectorAll('[data-yadisk-download]').forEach(link => {
     link.addEventListener('click', async event => {
       event.preventDefault();
@@ -12,88 +9,119 @@
         const { href } = await response.json();
         if (!href) throw new Error('no href');
         window.location.href = href;
-      } catch {
-        window.open(link.href, '_blank', 'noopener');
-      }
+      } catch { window.open(link.href, '_blank', 'noopener'); }
     });
   });
 
-  // Mobile menu: full height panel, links arrive one after another (CSS --i, capped at 400ms).
-  const toggle = document.querySelector('.menu-toggle');
-  const menu = document.getElementById('menu');
-  const setMenu = open => {
-    toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
-    menu.classList.toggle('open', open);
-    menu.setAttribute('aria-hidden', String(!open));
-    document.body.style.overflow = open ? 'hidden' : '';
+  // Views: opening one adds a tab, like views in Revit.
+  const views = [...document.querySelectorAll('.view')];
+  const tabsEl = document.getElementById('vtabs');
+  const open = [];
+  const byId = id => document.getElementById('v-' + id);
+  const meta = id => byId(id).dataset;
+  function render(active) {
+    tabsEl.textContent = '';
+    open.forEach(id => {
+      const tab = document.createElement('div');
+      tab.className = 'vtab'; tab.setAttribute('role', 'tab'); tab.setAttribute('aria-selected', String(id === active)); tab.tabIndex = 0;
+      tab.innerHTML = '<span></span><span class="x" title="Закрыть" role="button" aria-label="Закрыть вид">×</span>';
+      tab.firstChild.textContent = meta(id).title;
+      tab.addEventListener('click', e => { if (e.target.classList.contains('x')) { close(id); } else show(id); });
+      tab.addEventListener('keydown', e => { if (e.key === 'Enter') show(id); });
+      tabsEl.append(tab);
+    });
+  }
+  function close(id) {
+    const i = open.indexOf(id); if (i < 0 || open.length === 1) return;
+    open.splice(i, 1);
+    const cur = views.find(v => !v.hidden); const curId = cur ? cur.id.slice(2) : null;
+    show(curId === id ? open[Math.max(0, i - 1)] : curId);
+  }
+  function show(id) {
+    if (!open.includes(id)) open.push(id);
+    views.forEach(v => v.hidden = v.id !== 'v-' + id);
+    document.querySelectorAll('[data-open]').forEach(b => { const on = b.dataset.open === id; b.classList.toggle('on', on); if (b.classList.contains('rbtn') || b.classList.contains('node')) b.setAttribute('aria-current', String(on)); });
+    const m = meta(id);
+    const title = m.title;
+    document.getElementById('ttitle').textContent = 'Autodesk Revit 2024 — RabinBIM — [Вид: ' + title + ']';
+    document.getElementById('s-view').textContent = title;
+    document.getElementById('p-name').textContent = title;
+    document.getElementById('p-tier').textContent = m.tier || '—';
+    document.getElementById('p-desc').textContent = m.desc || '';
+    const doc = document.getElementById('p-doc'); doc.hidden = !m.doc; if (m.doc) doc.href = m.doc;
+    document.getElementById('views').scrollTop = 0;
+    history.replaceState(null, '', '#' + id);
+    render(id);
+  }
+  const companionGuides = {
+    clash: ['clash-work', 'clash-reports', 'clash-settings'],
+    open: ['open-start'],
   };
-  toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
-  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)));
-  addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
-
-  // Scroll reveal: each element rises once (IntersectionObserver, never a scroll listener).
-  const reveal = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add('in');
-      reveal.unobserve(entry.target);
-    });
-  }, { threshold: 0.15 });
-  document.querySelectorAll('[data-reveal]').forEach(el => reduce ? el.classList.add('in') : reveal.observe(el));
-
-  // Stories run only while their card is on screen.
-  const stories = new IntersectionObserver(entries => {
-    entries.forEach(entry => entry.target.classList.toggle('live', entry.isIntersecting));
-  }, { threshold: 0.2 });
-  document.querySelectorAll('.story').forEach(el => stories.observe(el));
-
-  // Tagline: every word goes from muted to full colour as it crosses the trigger line, in reading order.
-  document.querySelectorAll('[data-words]').forEach(el => {
-    const words = el.textContent.trim().split(/\s+/);
-    el.textContent = '';
-    const spans = words.map((word, index) => {
-      const span = document.createElement('span');
-      span.className = 'w';
-      span.textContent = word;
-      el.append(span);
-      if (index < words.length - 1) el.append(' ');
-      return span;
-    });
-    if (reduce) { spans.forEach(s => s.classList.add('on')); return; }
-    const io = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('on');
-        io.unobserve(entry.target);
-      });
-    }, { rootMargin: '0px 0px -35% 0px', threshold: 0.6 });
-    spans.forEach(s => io.observe(s));
+  views.filter(view => view.dataset.doc?.startsWith('#guide-')).forEach(view => {
+    const id = view.id.slice(2);
+    const topics = [view.dataset.doc.slice(7), ...(companionGuides[id] || [])];
+    const guide = document.createElement('section');
+    guide.className = 'guide-page inline-guide';
+    guide.id = 'instructions-' + id;
+    guide.setAttribute('aria-label', 'Инструкция по инструменту');
+    for (const topic of topics) {
+      const article = byId('guide-' + topic)?.querySelector('.guide-page');
+      if (!article) continue;
+      [...article.children].filter(element => !element.classList.contains('guide-back'))
+        .forEach(element => guide.append(element.cloneNode(true)));
+    }
+    view.append(guide);
+    view.dataset.doc = '#' + guide.id;
   });
 
-  // Section indicator in the navigation.
-  const links = [...document.querySelectorAll('.nav-links a')];
-  const spy = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      links.forEach(a => a.setAttribute('aria-current', String(a.getAttribute('href') === '#' + entry.target.id)));
+  const sectionButtons = [...document.querySelectorAll('[data-ribbon-section]')];
+  const panels = [...document.querySelectorAll('[data-ribbon-panel]')];
+  const ribbon = document.querySelector('.ribbon');
+  function setRibbonSection(section) {
+    sectionButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.ribbonSection === section)));
+    panels.forEach(panel => { panel.hidden = panel.dataset.ribbonPanel !== section; });
+    ribbon.scrollLeft = 0;
+  }
+  sectionButtons.forEach(button => button.addEventListener('click', () => setRibbonSection(button.dataset.ribbonSection)));
+  document.querySelectorAll('.rmenu-pop').forEach(menu => {
+    menu.addEventListener('beforetoggle', event => {
+      if (event.newState !== 'open') return;
+      const trigger = menu.previousElementSibling.getBoundingClientRect();
+      menu.style.left = Math.max(4, Math.min(trigger.left, document.documentElement.clientWidth - 244)) + 'px';
+      menu.style.top = trigger.bottom + 'px';
     });
-  }, { rootMargin: '-45% 0px -50% 0px' });
-  links.forEach(a => { const s = document.querySelector(a.getAttribute('href')); if (s) spy.observe(s); });
-
-  // Illustration QR: a fixed pseudo random pattern with finder squares in three corners.
+  });
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-open]');
+    const doc = event.target.closest('#p-doc');
+    const inline = event.target.closest('[data-inline-guide]');
+    if (inline || doc?.hash.startsWith('#instructions-')) {
+      event.preventDefault();
+      const guide = inline ? inline.closest('.view').querySelector('.inline-guide') : document.getElementById(doc.hash.slice(1));
+      guide?.scrollIntoView({ block: 'start' });
+      return;
+    }
+    if (!button) return;
+    if (button.tagName === 'A') event.preventDefault();
+    button.closest('.rmenu-pop')?.hidePopover();
+    show(button.dataset.open);
+  });
+  const start = location.hash.slice(1);
+  const initialPanel = panels.find(panel => [...panel.querySelectorAll('[data-open]')].some(button => button.dataset.open === start));
+  if (initialPanel) setRibbonSection(initialPanel.dataset.ribbonPanel);
+  show(start && byId(start) ? start : 'home');
   const qr = document.getElementById('qr');
   if (qr) {
-    const n = 11;
-    let seed = 7;
+    const n = 11; let seed = 7;
     const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
     const block = (x, y) => (x < 3 && y < 3) || (x > n - 4 && y < 3) || (x < 3 && y > n - 4);
     const hole = (x, y) => (x === 1 && y === 1) || (x === n - 2 && y === 1) || (x === 1 && y === n - 2);
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
       const cell = document.createElement('i');
-      if (block(x, y)) { if (!hole(x, y)) cell.className = 'k'; }
-      else if (rnd() > 0.5) cell.className = 'k';
+      if (block(x, y)) { if (!hole(x, y)) cell.className = 'k'; } else if (rnd() > 0.5) cell.className = 'k';
       qr.append(cell);
     }
   }
+
+
 })();
