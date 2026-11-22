@@ -1,93 +1,5 @@
 (() => {
-  const diskResources = 'https://cloud-api.yandex.net/v1/disk/public/resources';
-  function startDownload(url) {
-    // В <head> стоит <meta name="referrer" content="no-referrer">, поэтому
-    // window.location.assign не отправляет Referer (Яндекс.Диск не отдаёт 403)
-    // и не блокируется в Firefox после async fetch, в отличие от link.click().
-    window.location.assign(url);
-  }
-  const installerButtons = [...document.querySelectorAll('[data-installer-download]')];
   const viewStatus = document.getElementById('s-view');
-  function installerStatus(message) {
-    viewStatus.dataset.downloadStatus = '';
-    viewStatus.textContent = message;
-  }
-  installerButtons.forEach(button => {
-    button.addEventListener('click', async () => {
-      installerButtons.forEach(control => { control.disabled = true; });
-      installerStatus('Получаем ссылку на установщик…');
-      try {
-        const api = diskResources + '/download?public_key=' + encodeURIComponent(button.dataset.installerDownload);
-        const response = await fetch(api, { signal: AbortSignal.timeout(12000) });
-        if (!response.ok) throw new Error(String(response.status));
-        const { href } = await response.json();
-        const download = new URL(href);
-        if (download.protocol !== 'https:') throw new Error('Invalid download URL');
-        startDownload(download.href);
-        installerStatus('Скачивание установщика запрошено.');
-      } catch {
-        installerStatus('Ссылка недоступна. Попробуйте ещё раз.');
-      } finally {
-        installerButtons.forEach(control => { control.disabled = false; });
-      }
-    });
-  });
-
-  const latestZip = document.querySelector('[data-latest-zip]');
-  if (latestZip) {
-    const status = document.getElementById(latestZip.getAttribute('aria-describedby'));
-    const oldestSignedVersion = latestZip.dataset.minVersion.split('.').map(Number);
-    function compareVersions(left, right) {
-      for (let i = 0; i < left.length; i++) {
-        if (left[i] !== right[i]) return left[i] - right[i];
-      }
-      return 0;
-    }
-
-    latestZip.addEventListener('click', async () => {
-      latestZip.disabled = true;
-      status.textContent = 'Ищем последнюю версию…';
-      try {
-        const query = new URL(diskResources);
-        query.searchParams.set('public_key', latestZip.dataset.latestZip);
-        query.searchParams.set('limit', '100');
-        const signal = AbortSignal.timeout(12000);
-        let latest = null;
-        let offset = 0;
-        let total;
-        do {
-          query.searchParams.set('offset', String(offset));
-          const response = await fetch(query, { signal });
-          if (!response.ok) throw new Error('Yandex Disk HTTP ' + response.status);
-          const { _embedded: page } = await response.json();
-          if (!Array.isArray(page?.items) || !Number.isSafeInteger(page.total)) throw new Error('Invalid folder response');
-          for (const item of page.items) {
-            if (item.type !== 'file') continue;
-            const match = /^RabinBIM-(\d+\.\d+\.\d+\.\d+)\.zip$/i.exec(item.name);
-            if (!match) continue;
-            const version = match[1].split('.').map(Number);
-            if (!version.every(Number.isSafeInteger) || compareVersions(version, oldestSignedVersion) < 0) continue;
-            if (!latest || compareVersions(version, latest.version) > 0) latest = { item, version };
-          }
-          total = page.total;
-          offset += page.items.length;
-          if (!page.items.length && offset < total) throw new Error('Incomplete folder response');
-        } while (offset < total);
-        if (!latest) {
-          status.textContent = 'Подписанный ZIP пока недоступен.';
-          return;
-        }
-        const download = new URL(latest.item.file);
-        if (download.protocol !== 'https:') throw new Error('Invalid download URL');
-        status.textContent = 'Скачивание: ' + latest.item.name;
-        startDownload(download.href);
-      } catch {
-        status.textContent = 'Не удалось получить ссылку на архив. Попробуйте ещё раз.';
-      } finally {
-        latestZip.disabled = false;
-      }
-    });
-  }
 
   // Views: opening one adds a tab, like views in Revit.
   const views = [...document.querySelectorAll('.view')];
@@ -120,7 +32,6 @@
     const m = meta(id);
     const title = m.title;
     document.getElementById('ttitle').textContent = 'Autodesk Revit 2024 — RabinBIM — [Вид: ' + title + ']';
-    delete viewStatus.dataset.downloadStatus;
     viewStatus.textContent = title;
     document.getElementById('p-name').textContent = title;
     document.getElementById('p-tier').textContent = m.tier || '—';
