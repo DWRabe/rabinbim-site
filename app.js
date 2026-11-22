@@ -1,15 +1,10 @@
 (() => {
   const diskResources = 'https://cloud-api.yandex.net/v1/disk/public/resources';
   function startDownload(url) {
-    // Яндекс.Диск отдаёт 403 на downloader.disk.yandex.ru при внешнем Referer.
-    const link = document.createElement('a');
-    link.href = url;
-    link.rel = 'noreferrer';
-    link.referrerPolicy = 'no-referrer';
-    link.style.display = 'none';
-    document.body.append(link);
-    link.click();
-    link.remove();
+    // В <head> стоит <meta name="referrer" content="no-referrer">, поэтому
+    // window.location.assign не отправляет Referer (Яндекс.Диск не отдаёт 403)
+    // и не блокируется в Firefox после async fetch, в отличие от link.click().
+    window.location.assign(url);
   }
   const installerButtons = [...document.querySelectorAll('[data-installer-download]')];
   const viewStatus = document.getElementById('s-view');
