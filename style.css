@@ -127,7 +127,14 @@ img { display: block; }
 .ribbon > .rgroup:has(.rsections) { left: 108px; }
 .guide-page { max-width: 960px; padding: clamp(16px, 4vw, 32px); line-height: 1.55; overflow-wrap: anywhere; }
 .guide-page h1, .guide-page h2 { font-size: 24px; line-height: 1.2; margin: 12px 0; }
-.guide-page h3 { font-size: 16px; margin: 14px 0 6px; }
+.guide-page h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.guide-page h3 { font-size: 18px; margin: 18px 0 6px; }
+.guide-page h4 { font-size: 15px; margin: 14px 0 6px; }
+.guide-page dl.defs dt { font-weight: 600; color: var(--txt); margin-top: 10px; }
+.guide-page dl.defs dd { margin: 2px 0 8px 16px; color: #3b434e; }
+.guide-page .tag { flex-shrink: 0; font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+.guide-page .tag.free { background: #E5F6EE; color: #237804; }
+.guide-page .tag.pro { background: #DDEBFF; color: #1559A6; }
 .guide-page p, .guide-page figure { margin: 8px 0; }
 .guide-page ol, .guide-page ul:not(.guide-index) { padding-left: 22px; margin: 8px 0; }
 .guide-page ol { list-style: decimal; }
@@ -136,11 +143,23 @@ img { display: block; }
 .guide-page img { max-width: 100%; height: auto; }
 .guide-page figcaption { color: var(--muted); }
 .guide-page a { color: var(--acc-d); }
-.guide-page table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.guide-page table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; overflow-wrap: normal; }
 .guide-page th, .guide-page td { padding: 5px 8px; border: 1px solid var(--line); }
-.guide-index { max-width: 620px; border: 1px solid var(--line); background: var(--panel); }
+.guide-page td:first-child { white-space: nowrap; }
+.guide-index { max-width: 760px; border: 1px solid var(--line); background: var(--panel); }
 .guide-index li + li { margin-top: 0; border-top: 1px solid var(--line); }
-.guide-index .node { min-height: 32px; }
+.guide-index .node { min-height: 32px; justify-content: space-between; gap: 10px; }
+
+@media (min-width: 761px) {
+  .guide-page::after { content: ""; display: block; clear: both; }
+  .guide-page .shot.side { float: right; max-width: 280px; margin: 4px 0 12px 20px; }
+  .guide-page .shot.side.side-l { max-width: 280px; }
+}
+
+@media (max-width: 760px) {
+  .guide-page .shot.side { float: none; max-width: 100%; }
+  .guide-page .shot.side img { max-height: 420px; width: auto; object-fit: contain; }
+}
 .guide-back, .guide-link { color: var(--acc-d); }
 .guide-link { margin-top: 6px; }
 
