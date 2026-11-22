@@ -1,5 +1,16 @@
 (() => {
   const diskResources = 'https://cloud-api.yandex.net/v1/disk/public/resources';
+  function startDownload(url) {
+    // Яндекс.Диск отдаёт 403 на downloader.disk.yandex.ru при внешнем Referer.
+    const link = document.createElement('a');
+    link.href = url;
+    link.rel = 'noreferrer';
+    link.referrerPolicy = 'no-referrer';
+    link.style.display = 'none';
+    document.body.append(link);
+    link.click();
+    link.remove();
+  }
   const installerButtons = [...document.querySelectorAll('[data-installer-download]')];
   const viewStatus = document.getElementById('s-view');
   function installerStatus(message) {
@@ -17,7 +28,7 @@
         const { href } = await response.json();
         const download = new URL(href);
         if (download.protocol !== 'https:') throw new Error('Invalid download URL');
-        window.location.assign(download.href);
+        startDownload(download.href);
         installerStatus('Скачивание установщика запрошено.');
       } catch {
         installerStatus('Ссылка недоступна. Попробуйте ещё раз.');
@@ -74,7 +85,7 @@
         const download = new URL(latest.item.file);
         if (download.protocol !== 'https:') throw new Error('Invalid download URL');
         status.textContent = 'Скачивание: ' + latest.item.name;
-        window.location.assign(download.href);
+        startDownload(download.href);
       } catch {
         status.textContent = 'Не удалось получить ссылку на архив. Попробуйте ещё раз.';
       } finally {
